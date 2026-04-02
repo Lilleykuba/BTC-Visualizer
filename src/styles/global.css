@@ -1,0 +1,77 @@
+@import "@fontsource-variable/manrope";
+@import "@fontsource-variable/newsreader";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --color-base: 247 244 238;
+  --color-surface: 255 252 247;
+  --color-surface-alt: 242 236 227;
+  --color-ink: 31 33 36;
+  --color-muted: 101 105 111;
+  --color-line: 216 208 195;
+  --color-accent: 213 156 71;
+  --color-accent-strong: 185 126 39;
+  --color-mint: 80 140 128;
+  --color-sky: 98 141 173;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply min-h-screen bg-base font-sans text-ink antialiased;
+  background-image:
+    radial-gradient(circle at top left, rgba(213, 156, 71, 0.12), transparent 28rem),
+    radial-gradient(circle at 85% 20%, rgba(98, 141, 173, 0.12), transparent 24rem),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.75), rgba(247, 244, 238, 1));
+}
+
+::selection {
+  background: rgba(213, 156, 71, 0.22);
+}
+
+@layer base {
+  a {
+    @apply text-inherit;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply tracking-tight text-balance;
+  }
+
+  p {
+    @apply leading-7;
+  }
+}
+
+@layer components {
+  .panel {
+    @apply rounded-3xl border border-line/80 bg-surface/90 shadow-panel backdrop-blur;
+  }
+
+  .eyebrow {
+    @apply text-xs font-semibold uppercase tracking-[0.22em] text-muted;
+  }
+
+  .section-title {
+    @apply font-display text-3xl text-ink md:text-4xl;
+  }
+
+  .section-copy {
+    @apply max-w-2xl text-sm text-muted md:text-base;
+  }
+
+  .data-grid {
+    background-image: linear-gradient(rgba(216, 208, 195, 0.22) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(216, 208, 195, 0.22) 1px, transparent 1px);
+    background-size: 1.25rem 1.25rem;
+  }
+}

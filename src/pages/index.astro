@@ -1,0 +1,486 @@
+---
+import DrawdownChart from "@/components/charts/DrawdownChart";
+import NetworkPulseChart from "@/components/charts/NetworkPulseChart";
+import PriceHistoryChart from "@/components/charts/PriceHistoryChart";
+import Footer from "@/components/Footer.astro";
+import HalvingTimeline from "@/components/HalvingTimeline.astro";
+import SupplyGauge from "@/components/SupplyGauge.astro";
+import SurfaceCard from "@/components/ui/SurfaceCard.astro";
+import MetricCard from "@/components/ui/MetricCard.astro";
+import SectionIntro from "@/components/ui/SectionIntro.astro";
+import StateNotice from "@/components/ui/StateNotice.astro";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { DATA_SOURCES } from "@/lib/constants/sources";
+import { getDashboardData } from "@/lib/api/dashboard";
+import {
+  formatBtc,
+  formatCompactCurrency,
+  formatCompactNumber,
+  formatCurrency,
+  formatDate,
+  formatDays,
+  formatHashrateEh,
+  formatPercent,
+  formatSatVb
+} from "@/lib/formatters";
+
+const dashboard = await getDashboardData();
+
+function describeMarket() {
+  if (dashboard.market.status === "error" || !dashboard.market.data) {
+    return "Market data is unavailable right now, but the rest of the dashboard still prioritizes graceful fallbacks instead of failing as a whole.";
+  }
+
+  const { distanceFromAth, priceChange30d } = dashboard.market.data;
+
+  if (distanceFromAth > -10) {
+    return "BTC is trading close to all-time highs, which makes the dashboard useful for comparing optimism in price with slower-moving supply and network signals.";
+  }
+
+  if (priceChange30d > 10) {
+    return "The last month has been constructive, but the wider context still matters more than a single green stretch.";
+  }
+
+  return "BTC is off its highs enough that cycle context and downside framing are still important for reading the market honestly.";
+}
+
+function describePriceHistory() {
+  if (dashboard.priceHistory.status === "error" || !dashboard.priceHistory.data) {
+    return "Historical pricing is unavailable, so the chart area downgrades cleanly instead of leaving a broken visualization.";
+  }
+
+  const { oneYear } = dashboard.priceHistory.data.returns;
+
+  if (oneYear !== null && oneYear > 80) {
+    return "The one-year move has been strong, which is exactly when anchoring recent momentum against halving and drawdown history becomes more useful.";
+  }
+
+  if (oneYear !== null && oneYear < 0) {
+    return "A weaker one-year trend makes timeframe selection more informative than a single headline price.";
+  }
+
+  return "The timeframe selector keeps the chart useful for both short-term context and multi-cycle framing without turning the page into a trading terminal.";
+}
+
+function describeNetwork() {
+  if (dashboard.network.status === "error" || !dashboard.network.data) {
+    return "Network sources are unavailable, so this section focuses on transparent degradation rather than pretending the data is complete.";
+  }
+
+  const { hashrateChange1y, recommendedFees } = dashboard.network.data;
+
+  if (hashrateChange1y !== null && hashrateChange1y > 20) {
+    return "A rising hashrate suggests miners continue committing capital, even when day-to-day price action gets noisy.";
+  }
+
+  if (recommendedFees && recommendedFees.fastestFee <= 5) {
+    return "Low fee pressure suggests recent blockspace demand is relatively calm, which often contrasts nicely with market narratives driven by price alone.";
+  }
+
+  return "Network metrics add a second lens: price reflects demand, while hashrate, fees, and difficulty reflect usage and miner competition.";
+}
+
+function describeScarcity() {
+  if (dashboard.supply.status === "error" || !dashboard.supply.data) {
+    return "Supply progress needs a current circulating supply reading, so the UI leaves this section explicit when the source is missing.";
+  }
+
+  const { minedPercent, remainingSupply } = dashboard.supply.data;
+
+  if (minedPercent > 94) {
+    return `Only about ${formatBtc(remainingSupply, 0)} remains to be mined, which keeps the scarcity narrative grounded in protocol math rather than marketing language.`;
+  }
+
+  return "Supply remains one of Bitcoin’s clearest differentiators: predictable issuance, visible progress, and a hard upper bound.";
+}
+
+function describeDrawdowns() {
+  if (dashboard.drawdown.status === "error" || !dashboard.drawdown.data) {
+    return "Drawdown analysis needs long-run price history, so this section disappears gracefully when the underlying series is unavailable.";
+  }
+
+  const { currentDrawdown } = dashboard.drawdown.data;
+
+  if (currentDrawdown !== null && currentDrawdown > -15) {
+    return "Shallow drawdowns usually mean the market is trading from strength, which is when risk can be easiest to underestimate.";
+  }
+
+  if (currentDrawdown !== null && currentDrawdown < -40) {
+    return "Deeper drawdowns make this chart especially useful because it turns volatility into a readable risk frame.";
+  }
+
+  return "Drawdowns are a simple but honest way to explain Bitcoin risk without requiring a reader to already understand cycle lore.";
+}
+
+const title = "BTC-Visualizer | A calm Bitcoin dashboard built with public data";
+const description =
+  "BTC-Visualizer is a recruiter-facing Astro project that turns public Bitcoin market, network, halving, and scarcity data into a clean analytical dashboard.";
+---
+
+<BaseLayout title={title} description={description}>
+  <main class="mx-auto flex min-h-screen max-w-7xl flex-col gap-8 px-5 py-6 md:px-8 md:py-8 lg:px-10 lg:py-10">
+    <section class="grid gap-6 lg:grid-cols-[1.2fr,0.8fr]">
+      <SurfaceCard>
+        <div class="space-y-6">
+          <div class="space-y-3">
+            <p class="eyebrow">BTC-Visualizer</p>
+            <h1 class="font-display text-5xl text-ink md:text-6xl">Bitcoin beyond the price line.</h1>
+            <p class="max-w-2xl text-base text-muted md:text-lg">
+              BTC-Visualizer turns public Bitcoin data into a calm, readable dashboard that connects market action with
+              network behavior, halvings, and supply scarcity. It is an educational open-source project, not a trading
+              product.
+            </p>
+          </div>
+
+          <div class="grid gap-3 sm:grid-cols-3">
+            <div class="rounded-[1.5rem] border border-line/70 bg-surface-alt/60 p-4">
+              <p class="text-xs font-semibold uppercase tracking-[0.18em] text-muted">Data story</p>
+              <p class="mt-2 text-sm text-muted">Market, network, and protocol context instead of price alone.</p>
+            </div>
+            <div class="rounded-[1.5rem] border border-line/70 bg-surface-alt/60 p-4">
+              <p class="text-xs font-semibold uppercase tracking-[0.18em] text-muted">Rendering model</p>
+              <p class="mt-2 text-sm text-muted">Astro SSR with lightweight React islands only where charts benefit.</p>
+            </div>
+            <div class="rounded-[1.5rem] border border-line/70 bg-surface-alt/60 p-4">
+              <p class="text-xs font-semibold uppercase tracking-[0.18em] text-muted">Open-source fit</p>
+              <p class="mt-2 text-sm text-muted">Typed adapters, graceful fallbacks, and a sensible folder structure.</p>
+            </div>
+          </div>
+        </div>
+      </SurfaceCard>
+
+      <SurfaceCard class="h-full">
+        <div class="flex h-full flex-col justify-between gap-6">
+          <div class="space-y-3">
+            <p class="eyebrow">Project Context</p>
+            <h2 class="font-display text-3xl text-ink">What this dashboard uses</h2>
+            <p class="text-sm text-muted">
+              The app combines register-less market and network history from Blockchain.com Charts with fee and
+              retarget context from mempool.space. Responses are normalized on the server and cached briefly to reduce
+              API churn.
+            </p>
+          </div>
+
+          <div class="space-y-4 rounded-[1.75rem] border border-line/70 bg-surface-alt/60 p-5">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <p class="text-sm font-semibold text-ink">Snapshot generated</p>
+                <p class="mt-1 text-sm text-muted">{formatDate(dashboard.generatedAt)}</p>
+              </div>
+              <span class="rounded-full bg-ink/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-muted">
+                {dashboard.market.status === "error" || dashboard.network.status === "error" ? "Partial data" : "Live view"}
+              </span>
+            </div>
+            <div class="grid gap-3 sm:grid-cols-3">
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-muted">Sources</p>
+                <p class="mt-2 text-lg font-semibold text-ink">{DATA_SOURCES.length}</p>
+              </div>
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-muted">Sections</p>
+                <p class="mt-2 text-lg font-semibold text-ink">5 focused views</p>
+              </div>
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-muted">Purpose</p>
+                <p class="mt-2 text-lg font-semibold text-ink">Education first</p>
+              </div>
+            </div>
+            <p class="text-sm text-muted">{describeMarket()}</p>
+          </div>
+        </div>
+      </SurfaceCard>
+    </section>
+
+    <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      {dashboard.market.status === "partial" && dashboard.market.note && (
+        <div class="md:col-span-2 xl:col-span-4">
+          <StateNotice title="Partial market data" body={dashboard.market.note} variant="warning" />
+        </div>
+      )}
+
+      {dashboard.market.data ? (
+        <>
+          <MetricCard
+            label="Spot price"
+            value={formatCurrency(dashboard.market.data.currentPrice)}
+            trend={formatPercent(dashboard.market.data.priceChange24h)}
+            positive={dashboard.market.data.priceChange24h >= 0}
+            meta="24-hour move"
+          />
+          <MetricCard
+            label="Market cap"
+            value={formatCompactCurrency(dashboard.market.data.marketCap)}
+            trend={formatPercent(dashboard.market.data.priceChange30d)}
+            positive={dashboard.market.data.priceChange30d >= 0}
+            meta="30-day move"
+          />
+          <MetricCard
+            label="24h volume"
+            value={formatCompactCurrency(dashboard.market.data.totalVolume)}
+            trend={formatPercent(dashboard.market.data.priceChange7d)}
+            positive={dashboard.market.data.priceChange7d >= 0}
+            meta="7-day move"
+          />
+          <MetricCard
+            label="Circulating supply"
+            value={formatCompactNumber(dashboard.market.data.circulatingSupply)}
+            trend={`${((dashboard.market.data.circulatingSupply / dashboard.market.data.maxSupply) * 100).toFixed(1)}% mined`}
+            meta="Toward the 21M cap"
+          />
+        </>
+      ) : (
+        <div class="md:col-span-2 xl:col-span-4">
+          <StateNotice
+            title="Market snapshot unavailable"
+            body={dashboard.market.error ?? "Public market chart data could not be loaded for this request."}
+            variant="error"
+          />
+        </div>
+      )}
+    </section>
+
+    <SurfaceCard>
+      <div class="space-y-8">
+        <SectionIntro
+          eyebrow="Price History"
+          title="A main chart that stays useful across timeframes"
+          description="Price is still the anchor metric, but the goal here is context rather than spectacle. The chart keeps controls minimal, marks halving windows subtly, and pairs the shape of the market with recruiter-friendly explanatory copy."
+        />
+
+        <div class="grid gap-4 md:grid-cols-3">
+          <div class="rounded-[1.5rem] border border-line/60 bg-surface-alt/65 p-4">
+            <p class="text-sm text-muted">30-day return</p>
+            <p class="mt-2 text-xl font-semibold text-ink">
+              {formatPercent(dashboard.priceHistory.data?.returns.thirtyDay ?? null)}
+            </p>
+          </div>
+          <div class="rounded-[1.5rem] border border-line/60 bg-surface-alt/65 p-4">
+            <p class="text-sm text-muted">90-day return</p>
+            <p class="mt-2 text-xl font-semibold text-ink">
+              {formatPercent(dashboard.priceHistory.data?.returns.ninetyDay ?? null)}
+            </p>
+          </div>
+          <div class="rounded-[1.5rem] border border-line/60 bg-surface-alt/65 p-4">
+            <p class="text-sm text-muted">1-year return</p>
+            <p class="mt-2 text-xl font-semibold text-ink">
+              {formatPercent(dashboard.priceHistory.data?.returns.oneYear ?? null)}
+            </p>
+          </div>
+        </div>
+
+        <p class="max-w-3xl text-sm text-muted">{describePriceHistory()}</p>
+
+        {dashboard.priceHistory.status === "partial" && dashboard.priceHistory.note && (
+          <StateNotice title="Partial price context" body={dashboard.priceHistory.note} variant="warning" />
+        )}
+
+        {
+          dashboard.priceHistory.data ? (
+            <PriceHistoryChart
+              client:only="react"
+              points={dashboard.priceHistory.data.points}
+              halvingMarkers={dashboard.priceHistory.data.halvingMarkers}
+            >
+              <div slot="fallback" class="h-[360px] animate-pulse rounded-[1.75rem] bg-surface-alt/70"></div>
+            </PriceHistoryChart>
+          ) : (
+            <StateNotice
+              title="Price history unavailable"
+              body={dashboard.priceHistory.error ?? "Historical BTC pricing could not be loaded for this request."}
+              variant="error"
+            />
+          )
+        }
+      </div>
+    </SurfaceCard>
+
+    <section class="grid gap-6 xl:grid-cols-2">
+      {
+        dashboard.halving.data ? (
+          <div class="space-y-4">
+            {dashboard.halving.status === "partial" && dashboard.halving.note && (
+              <StateNotice title="Partial halving context" body={dashboard.halving.note} variant="warning" />
+            )}
+            <HalvingTimeline context={dashboard.halving.data} insight={`It has been ${formatDays(dashboard.halving.data.daysSinceLastHalving)} since the last halving, and issuance is currently ${dashboard.halving.data.currentReward} BTC per block.`} />
+          </div>
+        ) : (
+          <SurfaceCard>
+            <StateNotice
+              title="Halving context unavailable"
+              body={dashboard.halving.error ?? "Halving data could not be assembled for this request."}
+              variant="warning"
+            />
+          </SurfaceCard>
+        )
+      }
+
+      {
+        dashboard.supply.data ? (
+          <SupplyGauge supply={dashboard.supply.data} insight={describeScarcity()} />
+        ) : (
+          <SurfaceCard>
+            <StateNotice
+              title="Supply view unavailable"
+              body={dashboard.supply.error ?? "Supply progress could not be calculated for this request."}
+              variant="warning"
+            />
+          </SurfaceCard>
+        )
+      }
+    </section>
+
+    <section class="grid gap-6 xl:grid-cols-[1.2fr,0.8fr]">
+      <SurfaceCard>
+        <div class="space-y-6">
+          <SectionIntro
+            eyebrow="Network Pulse"
+            title="Network activity gives price some counterweight"
+            description="Market data tells you what people are paying. Network data helps explain what miners and users are doing. This section focuses on two readable signals: hashrate and fee pressure."
+          />
+          <p class="max-w-3xl text-sm text-muted">{describeNetwork()}</p>
+
+          {dashboard.network.status === "partial" && dashboard.network.note && (
+            <StateNotice title="Partial network data" body={dashboard.network.note} variant="warning" />
+          )}
+
+          {
+            dashboard.network.data ? (
+              <NetworkPulseChart
+                client:only="react"
+                hashrate={dashboard.network.data.hashrate}
+                transactionFees={dashboard.network.data.transactionFees}
+              >
+                <div slot="fallback" class="h-[320px] animate-pulse rounded-[1.75rem] bg-surface-alt/70"></div>
+              </NetworkPulseChart>
+            ) : (
+              <StateNotice
+                title="Network charts unavailable"
+                body={dashboard.network.error ?? "Network metrics could not be loaded for this request."}
+                variant="error"
+              />
+            )
+          }
+        </div>
+      </SurfaceCard>
+
+      <SurfaceCard class="h-full">
+        <div class="space-y-5">
+          <SectionIntro
+            eyebrow="What It Suggests"
+            title="A few current readings"
+            description="This companion panel keeps the network section practical by surfacing the latest values people actually use."
+          />
+
+          {dashboard.network.data ? (
+            <>
+              <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
+                <MetricCard
+                  label="Estimated hashrate"
+                  value={formatHashrateEh(dashboard.network.data.currentHashrate)}
+                  trend={formatPercent(dashboard.network.data.hashrateChange1y)}
+                  positive={dashboard.network.data.hashrateChange1y !== null ? dashboard.network.data.hashrateChange1y >= 0 : undefined}
+                  meta="1-year change"
+                />
+                <MetricCard
+                  label="Daily fees paid"
+                  value={formatBtc(dashboard.network.data.avgDailyFees)}
+                  trend={formatPercent(dashboard.network.data.difficultyChange)}
+                  positive={dashboard.network.data.difficultyChange !== null ? dashboard.network.data.difficultyChange >= 0 : undefined}
+                  meta="Projected difficulty adjustment"
+                />
+              </div>
+
+              <div class="rounded-[1.75rem] border border-line/70 bg-surface-alt/60 p-5">
+                <p class="text-sm font-semibold text-ink">Recommended fee ladder</p>
+                {dashboard.network.data.recommendedFees ? (
+                  <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                    <div class="rounded-2xl bg-surface px-4 py-3">
+                      <p class="text-xs uppercase tracking-[0.18em] text-muted">Fastest</p>
+                      <p class="mt-2 text-lg font-semibold text-ink">
+                        {formatSatVb(dashboard.network.data.recommendedFees.fastestFee)}
+                      </p>
+                    </div>
+                    <div class="rounded-2xl bg-surface px-4 py-3">
+                      <p class="text-xs uppercase tracking-[0.18em] text-muted">30 min</p>
+                      <p class="mt-2 text-lg font-semibold text-ink">
+                        {formatSatVb(dashboard.network.data.recommendedFees.halfHourFee)}
+                      </p>
+                    </div>
+                    <div class="rounded-2xl bg-surface px-4 py-3">
+                      <p class="text-xs uppercase tracking-[0.18em] text-muted">1 hour</p>
+                      <p class="mt-2 text-lg font-semibold text-ink">
+                        {formatSatVb(dashboard.network.data.recommendedFees.hourFee)}
+                      </p>
+                    </div>
+                    <div class="rounded-2xl bg-surface px-4 py-3">
+                      <p class="text-xs uppercase tracking-[0.18em] text-muted">Minimum</p>
+                      <p class="mt-2 text-lg font-semibold text-ink">
+                        {formatSatVb(dashboard.network.data.recommendedFees.minimumFee)}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <p class="mt-3 text-sm text-muted">Live fee recommendations were unavailable for this request.</p>
+                )}
+                <p class="mt-4 text-sm text-muted">
+                  {dashboard.network.data.nextRetargetDate
+                    ? `Next difficulty retarget is estimated around ${formatDate(dashboard.network.data.nextRetargetDate)}, with roughly ${dashboard.network.data.remainingBlocks?.toLocaleString("en-US") ?? "an unknown number of"} blocks remaining.`
+                    : "Difficulty retarget timing is temporarily unavailable."}
+                </p>
+              </div>
+            </>
+          ) : (
+            <StateNotice
+              title="Current network readings unavailable"
+              body={dashboard.network.error ?? "The network companion panel could not be assembled for this request."}
+              variant="warning"
+            />
+          )}
+        </div>
+      </SurfaceCard>
+    </section>
+
+    <SurfaceCard>
+      <div class="space-y-6">
+        <SectionIntro
+          eyebrow="Risk Lens"
+          title="Drawdowns turn volatility into something readable"
+          description="A simple drawdown chart says more about Bitcoin’s risk profile than another noisy indicator stack. It measures how far price has fallen from prior highs and keeps the downside story visible even in bullish periods."
+        />
+
+        <div class="grid gap-4 md:grid-cols-3">
+          <div class="rounded-[1.5rem] border border-line/60 bg-surface-alt/65 p-4">
+            <p class="text-sm text-muted">Current drawdown</p>
+            <p class="mt-2 text-xl font-semibold text-ink">{formatPercent(dashboard.drawdown.data?.currentDrawdown ?? null)}</p>
+          </div>
+          <div class="rounded-[1.5rem] border border-line/60 bg-surface-alt/65 p-4">
+            <p class="text-sm text-muted">Cycle low</p>
+            <p class="mt-2 text-xl font-semibold text-ink">{formatPercent(dashboard.drawdown.data?.cycleLowDrawdown ?? null)}</p>
+          </div>
+          <div class="rounded-[1.5rem] border border-line/60 bg-surface-alt/65 p-4">
+            <p class="text-sm text-muted">Max historical drawdown</p>
+            <p class="mt-2 text-xl font-semibold text-ink">{formatPercent(dashboard.drawdown.data?.maxDrawdown ?? null)}</p>
+          </div>
+        </div>
+
+        <p class="max-w-3xl text-sm text-muted">{describeDrawdowns()}</p>
+
+        {
+          dashboard.drawdown.data ? (
+            <DrawdownChart client:only="react" points={dashboard.drawdown.data.points}>
+              <div slot="fallback" class="h-[320px] animate-pulse rounded-[1.75rem] bg-surface-alt/70"></div>
+            </DrawdownChart>
+          ) : (
+            <StateNotice
+              title="Drawdown view unavailable"
+              body={dashboard.drawdown.error ?? "Drawdown history could not be calculated for this request."}
+              variant="error"
+            />
+          )
+        }
+      </div>
+    </SurfaceCard>
+
+    <Footer />
+  </main>
+</BaseLayout>

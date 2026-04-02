@@ -1,0 +1,55 @@
+---
+import SurfaceCard from "@/components/ui/SurfaceCard.astro";
+import SectionIntro from "@/components/ui/SectionIntro.astro";
+import type { HalvingContext } from "@/lib/types/dashboard";
+import { formatCurrency, formatDate, formatDays } from "@/lib/formatters";
+
+interface Props {
+  context: HalvingContext;
+  insight: string;
+}
+
+const { context, insight } = Astro.props;
+---
+
+<SurfaceCard class="h-full">
+  <div class="space-y-6">
+    <SectionIntro
+      eyebrow="Cycle Context"
+      title="Halvings provide the long-term clock"
+      description="Bitcoin’s supply issuance steps down roughly every four years. The timeline matters because it helps frame price history against supply policy instead of treating every cycle as a disconnected chart."
+    />
+
+    <div class="rounded-[1.75rem] border border-line/70 bg-surface-alt/60 p-5">
+      <div class="flex items-center justify-between gap-4">
+        <p class="text-sm font-semibold text-ink">Current cycle progress</p>
+        <p class="text-sm text-muted">{formatDays(context.daysUntilNextHalving)} until the next halving</p>
+      </div>
+      <div class="mt-4 h-2 overflow-hidden rounded-full bg-line/60">
+        <div class="h-full rounded-full bg-gradient-to-r from-accent to-accentStrong" style={`width: ${context.cycleProgress}%`}></div>
+      </div>
+      <p class="mt-4 text-sm text-muted">{insight}</p>
+    </div>
+
+    <div class="space-y-4">
+      {context.events.map((event) => (
+        <div class="rounded-[1.5rem] border border-line/60 bg-surface/75 p-4">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p class="text-sm font-semibold text-ink">{event.label}</p>
+              <p class="text-sm text-muted">{formatDate(event.date)} · Block {event.blockHeight.toLocaleString("en-US")}</p>
+            </div>
+            <span class="rounded-full bg-ink/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-muted">
+              {event.reward} BTC
+            </span>
+          </div>
+          <p class="mt-3 text-sm text-muted">
+            {event.estimated
+              ? "Estimated from the current issuance schedule."
+              : `BTC traded around ${formatCurrency(event.priceAtDate)} near this milestone.`}
+          </p>
+        </div>
+      ))}
+    </div>
+  </div>
+</SurfaceCard>

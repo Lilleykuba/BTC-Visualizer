@@ -1,0 +1,70 @@
+---
+import SurfaceCard from "@/components/ui/SurfaceCard.astro";
+import SectionIntro from "@/components/ui/SectionIntro.astro";
+import type { SupplySnapshot } from "@/lib/types/dashboard";
+import { formatBtc, formatDays } from "@/lib/formatters";
+
+interface Props {
+  supply: SupplySnapshot;
+  insight: string;
+}
+
+const { supply, insight } = Astro.props;
+const radius = 58;
+const circumference = 2 * Math.PI * radius;
+const offset = circumference * (1 - supply.minedPercent / 100);
+---
+
+<SurfaceCard class="h-full">
+  <div class="space-y-6">
+    <SectionIntro
+      eyebrow="Scarcity"
+      title="Most of the 21M supply is already spoken for"
+      description="Supply is one of Bitcoin’s clearest product constraints. A scarcity view makes the protocol legible to non-crypto audiences and shows how issuance keeps slowing over time."
+    />
+
+    <div class="grid gap-6 md:grid-cols-[220px,1fr] md:items-center">
+      <div class="relative mx-auto flex h-[180px] w-[180px] items-center justify-center rounded-full bg-surface-alt/80">
+        <svg viewBox="0 0 160 160" class="h-40 w-40 -rotate-90">
+          <circle cx="80" cy="80" r={radius} fill="none" stroke="rgba(216, 208, 195, 0.8)" stroke-width="12"></circle>
+          <circle
+            cx="80"
+            cy="80"
+            r={radius}
+            fill="none"
+            stroke="rgb(213, 156, 71)"
+            stroke-width="12"
+            stroke-linecap="round"
+            stroke-dasharray={circumference}
+            stroke-dashoffset={offset}
+          ></circle>
+        </svg>
+        <div class="absolute text-center">
+          <p class="text-3xl font-semibold tracking-tight text-ink">{supply.minedPercent.toFixed(1)}%</p>
+          <p class="text-sm text-muted">mined</p>
+        </div>
+      </div>
+
+      <div class="space-y-4">
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div class="rounded-[1.5rem] border border-line/60 bg-surface-alt/65 p-4">
+            <p class="text-sm text-muted">Circulating supply</p>
+            <p class="mt-2 text-xl font-semibold text-ink">{formatBtc(supply.circulatingSupply, 0)}</p>
+          </div>
+          <div class="rounded-[1.5rem] border border-line/60 bg-surface-alt/65 p-4">
+            <p class="text-sm text-muted">Still to be mined</p>
+            <p class="mt-2 text-xl font-semibold text-ink">{formatBtc(supply.remainingSupply, 0)}</p>
+          </div>
+        </div>
+        <div class="rounded-[1.5rem] border border-line/60 bg-surface-alt/65 p-4">
+          <p class="text-sm text-muted">Issuance era</p>
+          <p class="mt-2 text-xl font-semibold text-ink">{supply.issuanceEra}</p>
+          <p class="mt-2 text-sm text-muted">
+            Block rewards are currently {supply.currentReward} BTC, with the next step-down projected in {formatDays(supply.daysUntilNextHalving)}.
+          </p>
+        </div>
+        <p class="text-sm text-muted">{insight}</p>
+      </div>
+    </div>
+  </div>
+</SurfaceCard>
