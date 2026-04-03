@@ -1,14 +1,12 @@
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "astro/config";
-import node from "@astrojs/node";
+import netlify from "@astrojs/netlify";
 import react from "@astrojs/react";
 import tailwind from "@astrojs/tailwind";
 
 export default defineConfig({
   output: "server",
-  adapter: node({
-    mode: "standalone"
-  }),
+  adapter: netlify(),
   integrations: [react(), tailwind()],
   server: {
     host: true

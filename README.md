@@ -73,6 +73,16 @@ src/
 
 These were chosen because they are public, stable enough for a portfolio project, and do not require a paid service or a user account. Where possible, the stack leans on open infrastructure, with `mempool.space` serving as the clearest open-source source in the mix.
 
+## Deployment
+
+The app is intended to run as Astro SSR on Netlify.
+
+- Adapter: `@astrojs/netlify`
+- Build command: `npm run build`
+- Node version: `20+`
+
+If Netlify shows a plain `dist/client` and `dist/server` output, the project is usually still being built with the generic Node adapter or with the wrong deployment target. This repo should use the Netlify adapter because the dashboard fetches live public data on the server.
+
 ## Tradeoffs and simplifications
 
 - The app intentionally does not include dozens of BTC indicators. The goal is a clean product story, not feature volume.
