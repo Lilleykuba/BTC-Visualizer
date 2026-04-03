@@ -9,6 +9,6 @@ interface Props {
 const { class: className, padded = true } = Astro.props;
 ---
 
-<section class={cn("panel", padded && "p-6 md:p-8", className)}>
+<section class={cn("panel overflow-hidden", padded && "p-6 md:p-8", className)}>
   <slot />
 </section>

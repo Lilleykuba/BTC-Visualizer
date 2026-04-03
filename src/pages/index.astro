@@ -124,7 +124,7 @@ const description =
         <div class="space-y-6">
           <div class="space-y-3">
             <p class="eyebrow">BTC-Visualizer</p>
-            <h1 class="font-display text-5xl text-ink md:text-6xl">Bitcoin beyond the price line.</h1>
+            <h1 class="font-display text-4xl text-ink sm:text-5xl md:text-6xl">Bitcoin beyond the price line.</h1>
             <p class="max-w-2xl text-base text-muted md:text-lg">
               BTC-Visualizer turns public Bitcoin data into a calm, readable dashboard that connects market action with
               network behavior, halvings, and supply scarcity. It is an educational open-source project, not a trading
@@ -162,7 +162,7 @@ const description =
           </div>
 
           <div class="space-y-4 rounded-[1.75rem] border border-line/70 bg-surface-alt/60 p-5">
-            <div class="flex items-start justify-between gap-4">
+            <div class="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <p class="text-sm font-semibold text-ink">Snapshot generated</p>
                 <p class="mt-1 text-sm text-muted">{formatDate(dashboard.generatedAt)}</p>
@@ -281,7 +281,7 @@ const description =
               points={dashboard.priceHistory.data.points}
               halvingMarkers={dashboard.priceHistory.data.halvingMarkers}
             >
-              <div slot="fallback" class="h-[360px] animate-pulse rounded-[1.75rem] bg-surface-alt/70"></div>
+              <div slot="fallback" class="h-[320px] animate-pulse rounded-[1.75rem] bg-surface-alt/70 sm:h-[360px]"></div>
             </PriceHistoryChart>
           ) : (
             <StateNotice
@@ -350,7 +350,7 @@ const description =
                 hashrate={dashboard.network.data.hashrate}
                 transactionFees={dashboard.network.data.transactionFees}
               >
-                <div slot="fallback" class="h-[320px] animate-pulse rounded-[1.75rem] bg-surface-alt/70"></div>
+                <div slot="fallback" class="h-[280px] animate-pulse rounded-[1.75rem] bg-surface-alt/70 sm:h-[320px]"></div>
               </NetworkPulseChart>
             ) : (
               <StateNotice
@@ -468,7 +468,7 @@ const description =
         {
           dashboard.drawdown.data ? (
             <DrawdownChart client:only="react" points={dashboard.drawdown.data.points}>
-              <div slot="fallback" class="h-[320px] animate-pulse rounded-[1.75rem] bg-surface-alt/70"></div>
+              <div slot="fallback" class="h-[280px] animate-pulse rounded-[1.75rem] bg-surface-alt/70 sm:h-[320px]"></div>
             </DrawdownChart>
           ) : (
             <StateNotice

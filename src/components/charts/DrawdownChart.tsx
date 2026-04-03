@@ -9,6 +9,7 @@ import {
 } from "recharts";
 import { formatAxisDate, formatPercent } from "@/lib/formatters";
 import type { DrawdownPoint } from "@/lib/types/dashboard";
+import { useCompactChart } from "@/components/charts/useCompactChart";
 
 interface Props {
   points: DrawdownPoint[];
@@ -39,10 +40,15 @@ function DrawdownTooltip({ active, label, payload }: BasicTooltipProps) {
 }
 
 export default function DrawdownChart({ points }: Props) {
+  const isCompact = useCompactChart();
+
   return (
-    <div className="h-[320px] w-full">
+    <div className="h-[280px] w-full sm:h-[320px]">
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={points} margin={{ top: 12, right: 8, left: -18, bottom: 0 }}>
+        <AreaChart
+          data={points}
+          margin={{ top: 12, right: isCompact ? 0 : 8, left: isCompact ? -28 : -18, bottom: 0 }}
+        >
           <defs>
             <linearGradient id="drawdown-fill" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="rgba(80, 140, 128, 0.28)" stopOpacity={0.8} />
@@ -56,14 +62,15 @@ export default function DrawdownChart({ points }: Props) {
             tick={{ fill: "rgb(101, 105, 111)", fontSize: 12 }}
             axisLine={false}
             tickLine={false}
-            minTickGap={28}
+            minTickGap={isCompact ? 16 : 28}
           />
           <YAxis
             tickFormatter={formatPercent}
             tick={{ fill: "rgb(101, 105, 111)", fontSize: 12 }}
             axisLine={false}
             tickLine={false}
-            width={76}
+            width={isCompact ? 0 : 76}
+            hide={isCompact}
             domain={["dataMin", 0]}
           />
           <Tooltip content={<DrawdownTooltip />} />

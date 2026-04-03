@@ -21,7 +21,7 @@ const { context, insight } = Astro.props;
     />
 
     <div class="rounded-[1.75rem] border border-line/70 bg-surface-alt/60 p-5">
-      <div class="flex items-center justify-between gap-4">
+      <div class="flex flex-wrap items-center justify-between gap-4">
         <p class="text-sm font-semibold text-ink">Current cycle progress</p>
         <p class="text-sm text-muted">{formatDays(context.daysUntilNextHalving)} until the next halving</p>
       </div>

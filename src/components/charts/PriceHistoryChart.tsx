@@ -12,6 +12,7 @@ import {
 import { TIMEFRAME_OPTIONS } from "@/lib/constants/bitcoin";
 import { formatAxisDate, formatCurrency, formatCurrencyShort } from "@/lib/formatters";
 import type { HalvingMarker, PricePoint } from "@/lib/types/dashboard";
+import { useCompactChart } from "@/components/charts/useCompactChart";
 
 type Timeframe = number | "max";
 
@@ -62,6 +63,7 @@ function PriceTooltip({ active, label, payload }: BasicTooltipProps) {
 
 export default function PriceHistoryChart({ points, halvingMarkers }: Props) {
   const [timeframe, setTimeframe] = useState<Timeframe>(365);
+  const isCompact = useCompactChart();
   const filteredPoints = filterPoints(points, timeframe);
   const start = filteredPoints[0]?.timestamp ?? 0;
   const end = filteredPoints.at(-1)?.timestamp ?? 0;
@@ -93,9 +95,12 @@ export default function PriceHistoryChart({ points, halvingMarkers }: Props) {
         })}
       </div>
 
-      <div className="h-[360px] w-full">
+      <div className="h-[320px] w-full sm:h-[360px]">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={filteredPoints} margin={{ top: 12, right: 8, left: -18, bottom: 0 }}>
+          <AreaChart
+            data={filteredPoints}
+            margin={{ top: 12, right: isCompact ? 0 : 8, left: isCompact ? -28 : -18, bottom: 0 }}
+          >
             <defs>
               <linearGradient id="price-fill" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="rgb(213, 156, 71)" stopOpacity={0.32} />
@@ -109,14 +114,15 @@ export default function PriceHistoryChart({ points, halvingMarkers }: Props) {
               tick={{ fill: "rgb(101, 105, 111)", fontSize: 12 }}
               axisLine={false}
               tickLine={false}
-              minTickGap={28}
+              minTickGap={isCompact ? 16 : 28}
             />
             <YAxis
               tickFormatter={formatCurrencyShort}
               tick={{ fill: "rgb(101, 105, 111)", fontSize: 12 }}
               axisLine={false}
               tickLine={false}
-              width={70}
+              width={isCompact ? 0 : 70}
+              hide={isCompact}
             />
             <Tooltip content={<PriceTooltip />} />
             {visibleMarkers.map((marker) => (

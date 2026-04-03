@@ -10,6 +10,7 @@ import {
 } from "recharts";
 import { formatAxisDate, formatBtc, formatHashrateEh } from "@/lib/formatters";
 import type { FeePoint, HashratePoint } from "@/lib/types/dashboard";
+import { useCompactChart } from "@/components/charts/useCompactChart";
 
 interface Props {
   hashrate: HashratePoint[];
@@ -49,13 +50,14 @@ function NetworkTooltip({ active, label, payload, view }: BasicTooltipProps & { 
 export default function NetworkPulseChart({ hashrate, transactionFees }: Props) {
   const defaultView: View = hashrate.length > 0 ? "hashrate" : "fees";
   const [view, setView] = useState<View>(defaultView);
+  const isCompact = useCompactChart();
   const data = view === "hashrate" ? hashrate : transactionFees;
   const stroke = view === "hashrate" ? "rgb(98, 141, 173)" : "rgb(80, 140, 128)";
   const fill = view === "hashrate" ? "rgba(98, 141, 173, 0.25)" : "rgba(80, 140, 128, 0.25)";
 
   if (data.length === 0) {
     return (
-      <div className="flex h-[320px] items-center justify-center rounded-[1.75rem] border border-dashed border-line/70 bg-surface-alt/35 text-sm text-muted">
+      <div className="flex h-[280px] items-center justify-center rounded-[1.75rem] border border-dashed border-line/70 bg-surface-alt/35 text-sm text-muted sm:h-[320px]">
         Network history is temporarily unavailable.
       </div>
     );
@@ -92,9 +94,12 @@ export default function NetworkPulseChart({ hashrate, transactionFees }: Props) 
         )}
       </div>
 
-      <div className="h-[320px] w-full">
+      <div className="h-[280px] w-full sm:h-[320px]">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 12, right: 8, left: -18, bottom: 0 }}>
+          <AreaChart
+            data={data}
+            margin={{ top: 12, right: isCompact ? 0 : 8, left: isCompact ? -28 : -18, bottom: 0 }}
+          >
             <defs>
               <linearGradient id="network-fill" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor={fill} stopOpacity={0.8} />
@@ -108,14 +113,15 @@ export default function NetworkPulseChart({ hashrate, transactionFees }: Props) 
               tick={{ fill: "rgb(101, 105, 111)", fontSize: 12 }}
               axisLine={false}
               tickLine={false}
-              minTickGap={28}
+              minTickGap={isCompact ? 16 : 28}
             />
             <YAxis
               tickFormatter={view === "hashrate" ? formatHashrateEh : formatBtc}
               tick={{ fill: "rgb(101, 105, 111)", fontSize: 12 }}
               axisLine={false}
               tickLine={false}
-              width={84}
+              width={isCompact ? 0 : 84}
+              hide={isCompact}
             />
             <Tooltip content={<NetworkTooltip view={view} />} />
             <Area type="monotone" dataKey="value" stroke={stroke} strokeWidth={2.25} fill="url(#network-fill)" />
