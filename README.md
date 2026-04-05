@@ -90,8 +90,8 @@ These were chosen because they are public, stable enough for a portfolio project
 
 ## Screenshots
 
-- `screenshot-home.png`
-- `screenshot-network.png`
+![Home](screenshot-home.png)
+![Chart](screenshot-network.png)
 
 ## Future improvements
 
