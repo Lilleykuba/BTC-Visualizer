@@ -90,8 +90,8 @@ These were chosen because they are public, stable enough for a portfolio project
 
 ## Screenshots
 
-![Home](screenshot-home.png)
-![Chart](screenshot-network.png)
+![Home](public/screenshot-home.png)
+![Chart](public/screenshot-network.png)
 
 ## Future improvements
 
