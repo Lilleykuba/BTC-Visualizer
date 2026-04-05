@@ -1,6 +1,6 @@
 # BTC-Visualizer
 
-BTC-Visualizer is a recruiter-facing open-source dashboard that explains Bitcoin through a small, curated set of public-data views. Instead of treating BTC as only a price chart, the app connects market structure, halvings, network activity, and supply scarcity in a calm, readable interface.
+BTC-Visualizer is a open-source dashboard that explains Bitcoin through a small, curated set of public-data views. Instead of treating BTC as only a price chart, the app connects market structure, halvings, network activity, and supply scarcity in a calm, readable interface.
 
 It is built to feel like a real portfolio project: focused scope, clean architecture, thoughtful UI hierarchy, practical API handling, and readable code.
 
@@ -73,16 +73,6 @@ src/
 
 These were chosen because they are public, stable enough for a portfolio project, and do not require a paid service or a user account. Where possible, the stack leans on open infrastructure, with `mempool.space` serving as the clearest open-source source in the mix.
 
-## Deployment
-
-The app is intended to run as Astro SSR on Netlify.
-
-- Adapter: `@astrojs/netlify`
-- Build command: `npm run build`
-- Node version: `20+`
-
-If Netlify shows a plain `dist/client` and `dist/server` output, the project is usually still being built with the generic Node adapter or with the wrong deployment target. This repo should use the Netlify adapter because the dashboard fetches live public data on the server.
-
 ## Tradeoffs and simplifications
 
 - The app intentionally does not include dozens of BTC indicators. The goal is a clean product story, not feature volume.
@@ -100,10 +90,8 @@ If Netlify shows a plain `dist/client` and `dist/server` output, the project is 
 
 ## Screenshots
 
-Add screenshots here after the first local run:
-
-- `docs/screenshot-home.png`
-- `docs/screenshot-network.png`
+- `screenshot-home.png`
+- `screenshot-network.png`
 
 ## Future improvements
 
