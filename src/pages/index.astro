@@ -18,6 +18,7 @@ import {
   formatCompactNumber,
   formatCurrency,
   formatDate,
+  formatDateTime,
   formatDays,
   formatHashrateEh,
   formatPercent,
@@ -155,9 +156,9 @@ const description =
             <p class="eyebrow">Project Context</p>
             <h2 class="font-display text-3xl text-ink">What this dashboard uses</h2>
             <p class="text-sm text-muted">
-              The app combines register-less market and network history from Blockchain.com Charts with fee and
-              retarget context from mempool.space. Responses are normalized on the server and cached briefly to reduce
-              API churn.
+              The app combines live market readings from public price endpoints with long-run Bitcoin history from
+              Blockchain.com Charts and network context from mempool.space. Responses are normalized on the server and
+              cached briefly to reduce API churn.
             </p>
           </div>
 
@@ -173,16 +174,18 @@ const description =
             </div>
             <div class="grid gap-3 sm:grid-cols-3">
               <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-muted">Spot source</p>
+                <p class="mt-2 text-lg font-semibold text-ink">{dashboard.market.data?.source ?? "Unavailable"}</p>
+              </div>
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-muted">Market updated</p>
+                <p class="mt-2 text-base font-semibold text-ink">
+                  {dashboard.market.data ? formatDateTime(dashboard.market.data.lastUpdated) : "Unavailable"}
+                </p>
+              </div>
+              <div>
                 <p class="text-xs font-semibold uppercase tracking-[0.18em] text-muted">Sources</p>
                 <p class="mt-2 text-lg font-semibold text-ink">{DATA_SOURCES.length}</p>
-              </div>
-              <div>
-                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-muted">Sections</p>
-                <p class="mt-2 text-lg font-semibold text-ink">5 focused views</p>
-              </div>
-              <div>
-                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-muted">Purpose</p>
-                <p class="mt-2 text-lg font-semibold text-ink">Education first</p>
               </div>
             </div>
             <p class="text-sm text-muted">{describeMarket()}</p>
@@ -205,7 +208,7 @@ const description =
             value={formatCurrency(dashboard.market.data.currentPrice)}
             trend={formatPercent(dashboard.market.data.priceChange24h)}
             positive={dashboard.market.data.priceChange24h >= 0}
-            meta="24-hour move"
+            meta={`Spot source: ${dashboard.market.data.source}`}
           />
           <MetricCard
             label="Market cap"

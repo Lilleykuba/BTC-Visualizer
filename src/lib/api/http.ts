@@ -3,12 +3,18 @@ export async function fetchJson<T>(
   init?: RequestInit,
   parser?: (value: unknown) => T
 ): Promise<T> {
+  const { headers, signal: requestSignal, ...requestInit } = init ?? {};
+  const requestHeaders = new Headers(headers);
+  const signal = requestSignal ?? AbortSignal.timeout(10_000);
+
+  if (!requestHeaders.has("accept")) {
+    requestHeaders.set("accept", "application/json");
+  }
+
   const response = await fetch(url, {
-    headers: {
-      accept: "application/json",
-      ...(init?.headers ?? {})
-    },
-    ...init
+    ...requestInit,
+    headers: requestHeaders,
+    signal
   });
 
   if (!response.ok) {

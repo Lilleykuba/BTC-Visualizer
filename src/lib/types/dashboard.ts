@@ -20,6 +20,7 @@ export interface MarketSnapshot {
   athDate: string;
   distanceFromAth: number;
   lastUpdated: string;
+  source: string;
 }
 
 export interface PricePoint {
@@ -28,6 +29,16 @@ export interface PricePoint {
   marketCap: number;
   totalVolume: number;
   drawdown: number;
+}
+
+export interface LiveMarketSnapshot {
+  currentPrice: number;
+  marketCap: number | null;
+  totalVolume: number | null;
+  priceChange24h: number | null;
+  lastUpdated: string;
+  source: string;
+  note?: string;
 }
 
 export interface HalvingMarker {

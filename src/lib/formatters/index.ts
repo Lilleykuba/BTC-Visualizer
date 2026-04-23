@@ -33,6 +33,15 @@ const dateFormatter = new Intl.DateTimeFormat("en-US", {
   year: "numeric"
 });
 
+const dateTimeFormatter = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+  timeZoneName: "short"
+});
+
 const axisDateFormatter = new Intl.DateTimeFormat("en-US", {
   month: "short",
   year: "2-digit"
@@ -85,6 +94,11 @@ export function formatPercentPlain(value: number | null | undefined) {
 export function formatDate(value: number | string | Date) {
   const date = value instanceof Date ? value : new Date(value);
   return dateFormatter.format(date);
+}
+
+export function formatDateTime(value: number | string | Date) {
+  const date = value instanceof Date ? value : new Date(value);
+  return dateTimeFormatter.format(date);
 }
 
 export function formatAxisDate(value: number) {

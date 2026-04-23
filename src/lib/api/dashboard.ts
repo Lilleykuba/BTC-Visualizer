@@ -11,12 +11,14 @@ import {
   fetchTradeVolumeHistory,
   fetchTransactionFeeHistory
 } from "@/lib/api/blockchain";
+import { fetchLiveMarketSnapshot } from "@/lib/api/market";
 import { fetchDifficultyAdjustment, fetchRecommendedFees } from "@/lib/api/mempool";
 import type {
   DashboardData,
   DrawdownPayload,
   HalvingContext,
   HalvingMarker,
+  LiveMarketSnapshot,
   NetworkSnapshot,
   PriceHistoryPayload,
   PricePoint,
@@ -60,6 +62,10 @@ function latestValue<T extends { timestamp: number }>(series: T[]) {
   return [...series].sort((left, right) => left.timestamp - right.timestamp).at(-1) ?? null;
 }
 
+function sortByTimestamp<T extends { timestamp: number }>(series: T[]) {
+  return [...series].sort((left, right) => left.timestamp - right.timestamp);
+}
+
 function findValueAtOrBefore<T extends { timestamp: number }>(series: T[], timestamp: number) {
   let candidate: T | null = null;
 
@@ -72,6 +78,47 @@ function findValueAtOrBefore<T extends { timestamp: number }>(series: T[], times
   }
 
   return candidate;
+}
+
+function isSameUtcDay(left: number, right: number) {
+  return new Date(left).toISOString().slice(0, 10) === new Date(right).toISOString().slice(0, 10);
+}
+
+function mergeLivePricePoint(points: PricePoint[], liveMarket: LiveMarketSnapshot | null) {
+  const orderedPoints = sortByTimestamp(points);
+
+  if (!liveMarket) {
+    return orderedPoints;
+  }
+
+  const liveTimestamp = new Date(liveMarket.lastUpdated).getTime();
+
+  if (!Number.isFinite(liveTimestamp)) {
+    return orderedPoints;
+  }
+
+  const latestHistoricalPoint = orderedPoints.at(-1);
+  const livePoint: PricePoint = {
+    timestamp: liveTimestamp,
+    price: liveMarket.currentPrice,
+    marketCap: liveMarket.marketCap ?? latestHistoricalPoint?.marketCap ?? 0,
+    totalVolume: liveMarket.totalVolume ?? latestHistoricalPoint?.totalVolume ?? 0,
+    drawdown: 0
+  };
+
+  if (!latestHistoricalPoint) {
+    return [livePoint];
+  }
+
+  if (isSameUtcDay(latestHistoricalPoint.timestamp, liveTimestamp)) {
+    return [...orderedPoints.slice(0, -1), livePoint];
+  }
+
+  if (liveTimestamp > latestHistoricalPoint.timestamp) {
+    return [...orderedPoints, livePoint];
+  }
+
+  return orderedPoints;
 }
 
 function findClosestPoint(points: PricePoint[], date: string) {
@@ -224,9 +271,10 @@ function buildSupplySnapshot(circulatingSupply: number, halving: HalvingContext)
 function buildMarketSnapshot(
   prices: PricePoint[],
   supplySeries: Array<{ timestamp: number; value: number }>,
-  volumeSeries: Array<{ timestamp: number; value: number }>
+  volumeSeries: Array<{ timestamp: number; value: number }>,
+  liveMarket: LiveMarketSnapshot | null
 ) {
-  const orderedPrices = [...prices].sort((left, right) => left.timestamp - right.timestamp);
+  const orderedPrices = sortByTimestamp(prices);
   const latestPrice = orderedPrices.at(-1);
   const yesterdayPrice = orderedPrices.at(-2);
 
@@ -241,17 +289,20 @@ function buildMarketSnapshot(
   const latestVolume = latestValue(volumeSeries);
   const athPoint = orderedPrices.reduce((best, point) => (point.price > best.price ? point : best), orderedPrices[0]!);
 
-  const circulatingSupply = latestSupply?.value ?? 0;
-  const marketCap = latestPrice.price * circulatingSupply;
+  const circulatingSupply = latestSupply?.value ?? (liveMarket?.marketCap ? liveMarket.marketCap / latestPrice.price : 0);
+  const marketCap = (liveMarket?.marketCap ?? latestPrice.marketCap) || latestPrice.price * circulatingSupply;
+  const totalVolume = liveMarket?.totalVolume ?? latestVolume?.value ?? latestPrice.totalVolume ?? 0;
+  const priceChange24h =
+    liveMarket?.priceChange24h ??
+    (yesterdayPrice && yesterdayPrice.price !== 0 ? ((latestPrice.price / yesterdayPrice.price) - 1) * 100 : 0);
 
   return {
     currentPrice: latestPrice.price,
     marketCap,
-    totalVolume: latestVolume?.value ?? latestPrice.totalVolume ?? 0,
+    totalVolume,
     circulatingSupply,
     maxSupply: BTC_MAX_SUPPLY,
-    priceChange24h:
-      yesterdayPrice && yesterdayPrice.price !== 0 ? ((latestPrice.price / yesterdayPrice.price) - 1) * 100 : 0,
+    priceChange24h,
     priceChange7d:
       sevenDayPoint && sevenDayPoint.price !== 0 ? ((latestPrice.price / sevenDayPoint.price) - 1) * 100 : 0,
     priceChange30d:
@@ -259,7 +310,8 @@ function buildMarketSnapshot(
     ath: athPoint.price,
     athDate: new Date(athPoint.timestamp).toISOString(),
     distanceFromAth: athPoint.price === 0 ? 0 : ((latestPrice.price / athPoint.price) - 1) * 100,
-    lastUpdated: new Date(latestTimestamp).toISOString()
+    lastUpdated: liveMarket?.lastUpdated ?? new Date(latestTimestamp).toISOString(),
+    source: liveMarket?.source ?? "Blockchain.com Charts"
   };
 }
 
@@ -327,26 +379,38 @@ async function loadNetworkSection(): Promise<SectionState<NetworkSnapshot>> {
 }
 
 async function buildDashboardData(): Promise<DashboardData> {
-  const [priceResult, supplyResult, volumeResult, network] = await Promise.allSettled([
+  const [priceResult, supplyResult, volumeResult, liveMarketResult, network] = await Promise.allSettled([
     fetchMarketPriceHistory(),
     fetchCirculatingSupplyHistory(),
     fetchTradeVolumeHistory(),
+    fetchLiveMarketSnapshot(),
     loadNetworkSection()
   ]);
 
   const marketError = "Public market chart data is temporarily unavailable.";
   const historyError = "Historical BTC price data is temporarily unavailable.";
-  const priceHistoryPoints = priceResult.status === "fulfilled" ? priceResult.value : null;
+  const liveMarket = liveMarketResult.status === "fulfilled" ? liveMarketResult.value : null;
+  const rawPriceHistoryPoints = priceResult.status === "fulfilled" ? priceResult.value : [];
+  const marketPricePoints = mergeLivePricePoint(rawPriceHistoryPoints, liveMarket);
+  const priceHistoryPoints = priceResult.status === "fulfilled" ? marketPricePoints : null;
   const supplySeries = supplyResult.status === "fulfilled" ? supplyResult.value : [];
   const volumeSeries = volumeResult.status === "fulfilled" ? volumeResult.value : [];
+  const marketNotes = [
+    supplyResult.status === "rejected" || volumeResult.status === "rejected"
+      ? "Supply or volume chart data is partially unavailable, so some market snapshot values are derived from available sources."
+      : null,
+    liveMarketResult.status === "rejected"
+      ? "Live spot data is unavailable, so headline market values use the latest historical chart point."
+      : liveMarket?.note ?? null
+  ].filter((note): note is string => Boolean(note));
 
   const market =
-    priceHistoryPoints && supplyResult.status === "fulfilled"
-      ? ok(buildMarketSnapshot(priceHistoryPoints, supplySeries, volumeSeries))
-      : priceHistoryPoints
+    marketPricePoints.length > 0 && marketNotes.length === 0
+      ? ok(buildMarketSnapshot(marketPricePoints, supplySeries, volumeSeries, liveMarket))
+      : marketPricePoints.length > 0
         ? partial(
-            buildMarketSnapshot(priceHistoryPoints, supplySeries, volumeSeries),
-            "Supply or volume chart data is partially unavailable, so some market snapshot values are derived from the price series alone."
+            buildMarketSnapshot(marketPricePoints, supplySeries, volumeSeries, liveMarket),
+            marketNotes.join(" ")
           )
         : errorState(marketError);
 

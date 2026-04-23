@@ -1,6 +1,6 @@
 # BTC-Visualizer
 
-BTC-Visualizer is a open-source dashboard that explains Bitcoin through a small, curated set of public-data views. Instead of treating BTC as only a price chart, the app connects market structure, halvings, network activity, and supply scarcity in a calm, readable interface.
+BTC-Visualizer is an open-source dashboard that explains Bitcoin through a small, curated set of public-data views. Instead of treating BTC as only a price chart, the app connects market structure, halvings, network activity, and supply scarcity in a calm, readable interface.
 
 It is built to feel like a real portfolio project: focused scope, clean architecture, thoughtful UI hierarchy, practical API handling, and readable code.
 
@@ -8,7 +8,7 @@ It is built to feel like a real portfolio project: focused scope, clean architec
 
 - It turns multiple public APIs into one coherent product story instead of a collection of widgets.
 - It shows Astro used intentionally: server-rendered page shell, React islands only for charts, minimal client JavaScript elsewhere.
-- It demonstrates judgment through scoped features, graceful fallbacks, short TTL caching, strong formatting, and clean explanatory copy.
+- It demonstrates judgment through scoped features, live-data fallbacks, short TTL caching, strong formatting, and clean explanatory copy.
 - It is easy for another engineer to review because the data adapters, transformations, components, and layout concerns are separated cleanly.
 
 ## Feature set
@@ -53,6 +53,7 @@ src/
 
 - The app uses Astro server rendering so external APIs are fetched on the server, not directly from the browser.
 - `src/lib/api` contains thin adapters per source plus a dashboard aggregator that combines and transforms the responses.
+- Live market cards are intentionally separated from long-run chart history so headline price, volume, and market cap do not depend on slower historical endpoints.
 - External responses are parsed with Zod where shape stability matters.
 - A short in-memory TTL cache reduces repeated upstream calls during local development or server traffic bursts.
 - Each section can fail independently, so one flaky source does not collapse the whole page.
@@ -67,8 +68,9 @@ src/
 
 ## Data sources
 
-- Blockchain.com Charts: register-less price, supply, trade volume, hashrate, and fee history
-- mempool.space: recommended fees and difficulty adjustment context
+- CoinGecko: current BTC price, market cap, 24-hour volume, and 24-hour change
+- mempool.space: current BTC price fallback, recommended fees, and difficulty adjustment context
+- Blockchain.com Charts: register-less historical price, supply, trade volume, hashrate, and fee history
 - mempool/mempool on GitHub: open-source project behind mempool.space
 
 These were chosen because they are public, stable enough for a portfolio project, and do not require a paid service or a user account. Where possible, the stack leans on open infrastructure, with `mempool.space` serving as the clearest open-source source in the mix.
@@ -80,7 +82,7 @@ These were chosen because they are public, stable enough for a portfolio project
 - The UI uses custom Astro primitives instead of bringing in the full shadcn/ui surface area. That keeps the dependency footprint and client complexity lower while preserving consistency.
 - The app uses one excellent light theme instead of adding dark mode for its own sake.
 - The network section uses a small set of practical signals instead of trying to mirror a full mining dashboard.
-- The market layer now favors no-key public charts over richer commercial APIs. That keeps the app easier to run and more open-source friendly, at the cost of some metric precision and source variety.
+- The market layer favors no-key public APIs. Current headline metrics use live market endpoints, while historical views use chart endpoints that are better suited to long-range visualization.
 
 ## Open-source notes
 
@@ -96,13 +98,14 @@ These were chosen because they are public, stable enough for a portfolio project
 ## Future improvements
 
 - Add a compact cycle-comparison view normalized from each halving date
-- Introduce per-section stale timestamps if source freshness becomes important
+- Add source freshness badges if stricter stale-data guarantees become important
 - Add visual regression snapshots for the main dashboard route
 - Offer an alternate BTC-denominated reading mode for selected metrics
 
 ## Assumptions
 
+- CoinGecko continues exposing the public simple price endpoint used for current BTC market data.
+- mempool.space continues exposing public price, fee, and difficulty endpoints.
 - Blockchain.com Charts continues exposing the public JSON chart endpoints used for price, supply, volume, hashrate, and fee history.
-- mempool.space continues exposing public fee and difficulty endpoints.
 
 If one of those assumptions changes, the adapter layer is the only place that should need significant updates.
